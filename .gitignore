@@ -100,7 +100,16 @@ Thumbs.db
 .idea/
 
 # ==========================
-# Evidencias seleccionadas para GitHub
+# Evidencias pesadas
 # ==========================
-!docs/evidencias/
-!docs/evidencias/**
+docs/evidencias/*
+!docs/evidencias/.gitkeep
+
+# ==========================
+# Comprimidos
+# ==========================
+*.zip
+*.rar
+*.7z
+*.tar
+*.tar.gz
