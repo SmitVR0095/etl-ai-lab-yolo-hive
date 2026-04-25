@@ -1,0 +1,100 @@
+# ==========================
+# Python
+# ==========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# ==========================
+# Virtual environments
+# ==========================
+venv/
+.env/
+etl-ai-lab/
+.venv/
+
+# ==========================
+# Environment variables / secrets
+# ==========================
+.env
+.env.*
+!.env.example
+!.env.telegram.example
+.env.telegram
+airflow/airflow.env
+
+# ==========================
+# Logs
+# ==========================
+logs/
+*.log
+derby.log
+airflow/logs/
+airflow/runtime/
+
+# ==========================
+# Airflow local files
+# ==========================
+airflow/airflow.db
+airflow/airflow-webserver.pid
+airflow/*.pid
+airflow/webserver_config.py
+airflow/airflow.cfg
+
+# ==========================
+# Hadoop / Hive / Derby local metadata
+# ==========================
+metastore_db/
+spark-warehouse/
+hive/metastore_db/
+*.lck
+
+# ==========================
+# Data outputs
+# ==========================
+data/staging/*.csv
+data/processed/
+data/raw/images/*
+data/raw/videos/*
+!data/raw/images/.gitkeep
+!data/raw/videos/.gitkeep
+
+# ==========================
+# Checkpoints
+# ==========================
+checkpoints/*.json
+
+# ==========================
+# Detections / snapshots
+# ==========================
+detections/
+docs/evidencias/*.mp4
+docs/evidencias/*.avi
+docs/evidencias/*.mov
+
+# ==========================
+# Large models
+# ==========================
+models/*.pt
+models/*.onnx
+models/*.engine
+!models/README.md
+
+# ==========================
+# ZIP / Windows metadata
+# ==========================
+*.zip
+*:Zone.Identifier
+
+# ==========================
+# OS / editor
+# ==========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

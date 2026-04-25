@@ -1,0 +1,9 @@
+ultralytics>=8.0.0
+opencv-python>=4.8.0
+numpy>=1.26.0
+pandas>=2.0.0
+pillow>=10.0.0
+pytest>=8.0.0
+pylint>=3.0.0
+black>=24.0.0
+pyarrow>=15.0.0
