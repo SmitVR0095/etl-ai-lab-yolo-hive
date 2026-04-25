@@ -44,11 +44,12 @@ CYAN   := \033[0;36m
 RED    := \033[0;31m
 RESET  := \033[0m
 
-.PHONY: help check-paths install-deps install-telegram-deps test-python \
+.PHONY: help check-paths install install-deps install-telegram-deps test test-python \
         start-hadoop stop-hadoop status-hadoop \
-        start-hive stop-hive status-hive test-hive hive-init hive-final-textfile \
-        detect-images detect-videos detect-camera detect-all \
-        load-hive validate-hive validate-hive-sample count-hdfs list-hdfs \
+        start-hive stop-hive status-hive test-hive hive-init hive-create hive-final-textfile hive-merge \
+        detect-images detect-videos detect-camera detect-all classify-all \
+        clean-yolo-state refresh-images refresh-videos \
+        load-hive etl-hive validate-hive validate-hive-sample count-hdfs list-hdfs \
         telegram-test telegram-start telegram-ok telegram-error \
         detect-images-notify detect-videos-notify load-hive-notify \
         run-review run-review-notify airflow-start airflow-stop clean clean-runtime
@@ -60,42 +61,66 @@ help:
 	@printf "$(CYAN)╚════════════════════════════════════════════════════════════╝$(RESET)\n"
 	@echo ""
 	@printf "$(YELLOW)Instalación y validación:$(RESET)\n"
+	@echo "  make install                 Alias de install-deps"
 	@echo "  make install-deps            Instala dependencias Python del proyecto"
 	@echo "  make install-telegram-deps   Instala requests para Telegram"
+	@echo "  make test                    Alias de test-python"
 	@echo "  make test-python             Valida imports: torch, ultralytics, cv2, pandas"
 	@echo "  make check-paths             Valida rutas principales del proyecto"
 	@echo ""
 	@printf "$(YELLOW)Servicios Big Data:$(RESET)\n"
 	@echo "  make start-hadoop            Levanta HDFS y YARN"
-	@echo "  make status-hadoop           Muestra JPS y nodos YARN"
+	@echo "  make status-hadoop           Muestra JPS, nodos YARN y raíz HDFS"
 	@echo "  make stop-hadoop             Detiene HDFS y YARN"
 	@echo "  make start-hive              Levanta HiveServer2 en puerto 10000"
 	@echo "  make status-hive             Valida puertos 10000/10002 y conexión Beeline"
 	@echo "  make stop-hive               Detiene HiveServer2/Metastore"
+	@echo "  make test-hive               Alias de status-hive"
+	@echo ""
+	@printf "$(YELLOW)Hive / SQL:$(RESET)\n"
 	@echo "  make hive-init               Crea base y tablas Hive"
+	@echo "  make hive-create             Alias de hive-init"
 	@echo "  make hive-final-textfile     Recrea yolo_objects como EXTERNAL TEXTFILE funcional"
+	@echo "  make hive-merge              Alias de hive-final-textfile"
 	@echo ""
 	@printf "$(YELLOW)Detección YOLO:$(RESET)\n"
 	@echo "  make detect-images           Ejecuta detección en imágenes"
 	@echo "  make detect-videos           Ejecuta detección en videos"
 	@echo "  make detect-camera           Ejecuta detección en cámara"
 	@echo "  make detect-all              Ejecuta imágenes y videos"
+	@echo "  make classify-all            Alias de detect-all"
+	@echo ""
+	@printf "$(YELLOW)Refresco de datos:$(RESET)\n"
+	@echo "  make clean-yolo-state        Limpia CSV, checkpoint, lotes y HDFS staging"
+	@echo "  make refresh-images          Limpia estado, procesa solo imágenes, carga a Hive y valida"
+	@echo "  make refresh-videos          Limpia estado, procesa solo videos, carga a Hive y valida"
 	@echo ""
 	@printf "$(YELLOW)Carga y validación Hive:$(RESET)\n"
 	@echo "  make load-hive               Carga CSV/lotes a HDFS y Hive staging"
+	@echo "  make etl-hive                Alias de load-hive"
 	@echo "  make validate-hive           Consulta yolo_objects LIMIT 20"
+	@echo "  make validate-hive-sample    Consulta yolo_objects LIMIT 5 con todos los campos"
 	@echo "  make count-hdfs              Cuenta registros desde HDFS sin COUNT(*)"
 	@echo "  make list-hdfs               Lista archivos en HDFS staging"
 	@echo ""
 	@printf "$(YELLOW)Telegram:$(RESET)\n"
 	@echo "  make telegram-test           Envía mensaje de prueba Telegram"
+	@echo "  make telegram-start          Envía notificación de inicio"
+	@echo "  make telegram-ok             Envía notificación de finalización correcta"
+	@echo "  make telegram-error          Envía notificación de error"
 	@echo "  make detect-images-notify    Detecta imágenes con notificación inicio/fin"
 	@echo "  make detect-videos-notify    Detecta videos con notificación inicio/fin"
 	@echo "  make load-hive-notify        Carga a Hive con notificación inicio/fin"
 	@echo ""
 	@printf "$(YELLOW)Flujos completos:$(RESET)\n"
-	@echo "  make run-review              Levanta servicios, detecta, carga y valida"
+	@echo "  make run-review              Levanta servicios, limpia estado, detecta, carga y valida"
 	@echo "  make run-review-notify       Igual que run-review, con Telegram"
+	@echo ""
+	@printf "$(YELLOW)Airflow y limpieza:$(RESET)\n"
+	@echo "  make airflow-start           Inicia webserver y scheduler de Airflow"
+	@echo "  make airflow-stop            Detiene procesos de Airflow"
+	@echo "  make clean                   Limpia __pycache__ y *.pyc"
+	@echo "  make clean-runtime           Limpia salidas locales procesadas"
 	@echo ""
 
 check-paths:
@@ -170,6 +195,7 @@ start-hive:
 	@ss -ltnp | grep -E "10000|10002" || \
 	  (echo "HiveServer2 no levantó. Últimas líneas del log:" && tail -n 120 logs/hiveserver2.log && exit 1)
 	@$(MAKE) status-hive
+
 stop-hive:
 	@echo "Deteniendo HiveServer2/Metastore de forma segura..."
 	@for pid in $$(jps -l | awk '/org.apache.hadoop.util.RunJar/ {print $$1}'); do \
@@ -184,7 +210,7 @@ status-hive:
 	@ss -ltnp | grep -E "10000|10002" || true
 	@echo "Validando conexión Beeline..."
 	@for i in $$(seq 1 24); do \
-	  if beeline -u jdbc:hive2://localhost:10000/default -n smit_vr -e "SHOW DATABASES;" >/tmp/beeline_status_hive.log 2>&1; then \
+	  if beeline -u $(DEFAULT_URL) -n $(USER_HIVE) -e "SHOW DATABASES;" >/tmp/beeline_status_hive.log 2>&1; then \
 	    cat /tmp/beeline_status_hive.log; \
 	    echo "HiveServer2 responde correctamente."; \
 	    exit 0; \
@@ -195,6 +221,7 @@ status-hive:
 	cat /tmp/beeline_status_hive.log || true; \
 	echo "HiveServer2 no respondió por Beeline."; \
 	exit 1
+
 test-hive: status-hive
 
 hive-init:
@@ -229,6 +256,23 @@ detect-camera:
 	$(PYTHON) src/sistema_clasificacion.py --mode camera --model $(MODEL) --conf $(CONF) --every-n-frames $(EVERY_N) --camera-index $(CAMERA_IDX)
 
 detect-all: detect-images detect-videos
+
+clean-yolo-state:
+	@echo "Limpiando estado YOLO/Hive para una ejecución fresca..."
+	@cd $(PROJECT_DIR) && rm -f $(CSV_STAGE)
+	@cd $(PROJECT_DIR) && rm -f $(CHECKPOINT)
+	@cd $(PROJECT_DIR) && rm -rf $(BATCH_DIR)/*
+	@cd $(PROJECT_DIR) && rm -rf data/processed/annotated/images/*
+	@cd $(PROJECT_DIR) && rm -rf data/processed/annotated/videos/*
+	@hdfs dfs -rm -r -f $(HDFS_STAGE) >/dev/null 2>&1 || true
+	@hdfs dfs -mkdir -p $(HDFS_STAGE) >/dev/null 2>&1 || true
+	@echo "Estado limpiado: CSV, checkpoint, lotes locales y HDFS staging."
+
+refresh-images: check-paths start-hadoop start-hive hive-init clean-yolo-state detect-images load-hive hive-final-textfile validate-hive count-hdfs
+	@printf "$(GREEN)Flujo de imágenes actualizado correctamente.$(RESET)\n"
+
+refresh-videos: check-paths start-hadoop start-hive hive-init clean-yolo-state detect-videos load-hive hive-final-textfile validate-hive count-hdfs
+	@printf "$(GREEN)Flujo de videos actualizado correctamente.$(RESET)\n"
 
 load-hive:
 	cd $(PROJECT_DIR)
@@ -285,8 +329,8 @@ load-hive-notify:
 	cd $(PROJECT_DIR)
 	bash $(WRAPPER) "Carga CSV a HDFS/Hive" $(PYTHON) src/sistema_batch_etl.py --input-csv $(CSV_STAGE) --output-dir $(BATCH_DIR) --checkpoint $(CHECKPOINT) --hdfs-dir $(HDFS_IN) --table yolo_objects_csv_stage --beeline-url $(HIVE_URL)
 
-run-review: check-paths start-hadoop start-hive hive-init detect-images detect-videos load-hive hive-final-textfile validate-hive count-hdfs
-	@printf "$(GREEN)Flujo de revisión finalizado correctamente.$(RESET)\n"
+run-review: check-paths start-hadoop start-hive hive-init clean-yolo-state detect-images detect-videos load-hive hive-final-textfile validate-hive count-hdfs
+	@printf "$(GREEN)Flujo completo ejecutado correctamente con datos actualizados.$(RESET)\n"
 
 run-review-notify:
 	$(MAKE) telegram-start
@@ -313,3 +357,18 @@ clean-runtime:
 	cd $(PROJECT_DIR)
 	rm -rf data/processed/annotated/* data/processed/hive_batches/*
 	@printf "$(YELLOW)Se limpiaron salidas procesadas locales.$(RESET)\n"
+
+# -----------------------------------------------------------------------------
+# Aliases de compatibilidad documental
+# -----------------------------------------------------------------------------
+install: install-deps
+
+test: test-python
+
+hive-create: hive-init
+
+classify-all: detect-all
+
+etl-hive: load-hive
+
+hive-merge: hive-final-textfile
