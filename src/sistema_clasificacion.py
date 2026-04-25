@@ -30,6 +30,14 @@ def append_records(csv_path: Path, records: list[dict]) -> None:
         writer.writerows(records)
 
 
+def reset_csv(csv_path: Path) -> None:
+    """Elimina el CSV de staging para regenerarlo limpio en cada ejecución."""
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    if csv_path.exists():
+        csv_path.unlink()
+        print(f"[INFO] CSV anterior eliminado: {csv_path}")
+
+
 def iter_files(input_dir: Path, extensions: set[str]) -> Iterable[Path]:
     """Lista archivos válidos de forma ordenada desde una carpeta."""
     if not input_dir.exists():
@@ -156,6 +164,7 @@ def main() -> None:
     parser.add_argument("--images", default="data/raw/images", help="Carpeta de imágenes")
     parser.add_argument("--videos", default="data/raw/videos", help="Carpeta de videos")
     parser.add_argument("--output-csv", default="data/staging/yolo_detections.csv", help="CSV de staging")
+    parser.add_argument("--append-csv", action="store_true", help="No borra el CSV antes de procesar; agrega filas al archivo existente")
     parser.add_argument("--annotated-dir", default="data/processed/annotated", help="Salida de imágenes/videos anotados")
     parser.add_argument("--conf", type=float, default=0.35, help="Confianza mínima YOLO")
     parser.add_argument("--every-n-frames", type=int, default=5, help="Muestreo para video/cámara")
@@ -166,6 +175,9 @@ def main() -> None:
     model = YOLO(args.model)
     output_csv = Path(args.output_csv)
     annotated_dir = Path(args.annotated_dir)
+
+    if not args.append_csv:
+        reset_csv(output_csv)
 
     if args.mode in {"images", "all"}:
         process_images(model, Path(args.images), output_csv, annotated_dir / "images", args.conf)
