@@ -258,7 +258,7 @@ detect-camera:
 detect-all: detect-images detect-videos
 
 clean-yolo-state:
-	@echo "Limpiando estado YOLO/Hive para una ejecución fresca..."
+	@echo "🧹 Limpiando estado YOLO/Hive para una ejecución fresca..."
 	@cd $(PROJECT_DIR) && rm -f $(CSV_STAGE)
 	@cd $(PROJECT_DIR) && rm -f $(CHECKPOINT)
 	@cd $(PROJECT_DIR) && rm -rf $(BATCH_DIR)/*
@@ -266,13 +266,13 @@ clean-yolo-state:
 	@cd $(PROJECT_DIR) && rm -rf data/processed/annotated/videos/*
 	@hdfs dfs -rm -r -f $(HDFS_STAGE) >/dev/null 2>&1 || true
 	@hdfs dfs -mkdir -p $(HDFS_STAGE) >/dev/null 2>&1 || true
-	@echo "Estado limpiado: CSV, checkpoint, lotes locales y HDFS staging."
+	@echo "✅ Estado limpiado: CSV, checkpoint, lotes locales y HDFS staging."
 
 refresh-images: check-paths start-hadoop start-hive hive-init clean-yolo-state detect-images load-hive hive-final-textfile validate-hive count-hdfs
-	@printf "$(GREEN)Flujo de imágenes actualizado correctamente.$(RESET)\n"
+	@printf "\033[0;32m✅ Flujo de imágenes actualizado correctamente.\033[0m\n"
 
 refresh-videos: check-paths start-hadoop start-hive hive-init clean-yolo-state detect-videos load-hive hive-final-textfile validate-hive count-hdfs
-	@printf "$(GREEN)Flujo de videos actualizado correctamente.$(RESET)\n"
+	@printf "\033[0;32m✅ Flujo de videos actualizado correctamente.\033[0m\n"
 
 load-hive:
 	cd $(PROJECT_DIR)
@@ -330,7 +330,7 @@ load-hive-notify:
 	bash $(WRAPPER) "Carga CSV a HDFS/Hive" $(PYTHON) src/sistema_batch_etl.py --input-csv $(CSV_STAGE) --output-dir $(BATCH_DIR) --checkpoint $(CHECKPOINT) --hdfs-dir $(HDFS_IN) --table yolo_objects_csv_stage --beeline-url $(HIVE_URL)
 
 run-review: check-paths start-hadoop start-hive hive-init clean-yolo-state detect-images detect-videos load-hive hive-final-textfile validate-hive count-hdfs
-	@printf "$(GREEN)Flujo completo ejecutado correctamente con datos actualizados.$(RESET)\n"
+	@printf "\033[0;32m✅ Flujo completo ejecutado correctamente con datos actualizados.\033[0m\n"
 
 run-review-notify:
 	$(MAKE) telegram-start
