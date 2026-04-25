@@ -1,71 +1,228 @@
-# 🛠️ Instructivo del Makefile – Proyecto YOLO + HDFS + Hive + Telegram
+# 🛠️ Instructivo profesional del Makefile – Proyecto YOLO + HDFS + Hive + Telegram
 
-## 1. Objetivo
+## 👨‍💻 Autor
 
-Este documento explica los comandos configurados en el `Makefile`, cuándo deben utilizarse y qué parte del flujo ejecuta cada uno.
+**Smit Jonatan Villafranca Romero**
 
-El `Makefile` permite automatizar el proyecto completo:
+Este documento describe las funcionalidades configuradas en el `Makefile` del proyecto **YOLO + HDFS + Hive + Telegram**, explica cuándo usar cada comando y propone una ruta recomendada para validar el ambiente, ejecutar la detección de objetos, cargar resultados en Hive y generar evidencias técnicas.
+
+---
+
+## 1. 🎯 Objetivo del Makefile
+
+El `Makefile` automatiza el flujo completo del proyecto para reducir errores manuales y facilitar la revisión técnica:
 
 ```text
-YOLOv8 → CSV → HDFS → Hive → Validación SQL → Telegram opcional
+YOLOv8 → CSV local → Validación CSV → HDFS → Hive → Validación SQL → Reporte → Telegram opcional
+```
+
+Permite ejecutar tareas repetitivas con comandos simples como:
+
+```bash
+make demo
+make run-review
+make refresh-images
+make validate-csv
+make report-run
 ```
 
 ---
 
-## 2. Ver comandos disponibles
+## 2. ✅ Requisitos previos
+
+Antes de usar el Makefile, se espera que el ambiente base esté instalado y configurado:
+
+| Componente | Uso en el proyecto |
+|---|---|
+| Python 3.12 | Ejecución de scripts YOLO y ETL |
+| Entorno virtual `etl-ai-lab` | Aislamiento de dependencias |
+| YOLOv8 / Ultralytics | Detección de objetos |
+| OpenCV | Lectura y escritura de imágenes/videos |
+| Hadoop / HDFS | Almacenamiento distribuido |
+| Hive / HiveServer2 | Consulta SQL sobre datos procesados |
+| Beeline | Cliente JDBC para Hive |
+| Airflow | Orquestación opcional |
+| Telegram Bot | Notificaciones opcionales |
+
+Activar el entorno virtual:
+
+```bash
+cd ~/cursobsgetl/codigo/etl-ai-lab
+source ~/cursobsgetl/ambientes/etl-ai-lab/bin/activate
+```
+
+---
+
+## 3. 📌 Comando base de ayuda
+
+Para ver todos los comandos disponibles:
 
 ```bash
 make help
 ```
 
-Este comando muestra todos los targets disponibles.
+Este comando es el punto de entrada recomendado porque muestra las categorías principales: instalación, Hadoop, Hive, detección YOLO, validación, reportes, Telegram y flujos completos.
 
 ---
 
-## 3. Comandos de instalación y validación
+## 4. 🚦 Comandos más importantes
 
-### `make install-deps`
+| Prioridad | Comando | Uso recomendado |
+|---:|---|---|
+| 1 | `make preflight` | Diagnóstico general del ambiente antes de ejecutar el modelo |
+| 2 | `make demo` | Prueba liviana con 2 imágenes y 2 videos para detectar errores rápidamente |
+| 3 | `make run-review` | Ejecución completa del flujo para revisión final |
+| 4 | `make refresh-images` | Reprocesar solo imágenes cuando se cambió `data/raw/images/` |
+| 5 | `make refresh-videos` | Reprocesar solo videos cuando se cambió `data/raw/videos/` |
+| 6 | `make validate-csv` | Validar estructura y contenido del CSV generado |
+| 7 | `make validate-hive` | Validar que Hive lea correctamente los datos |
+| 8 | `make report-run` | Generar reporte Markdown de la última ejecución |
+| 9 | `make run-review-notify` | Ejecutar flujo completo con notificaciones Telegram |
 
-Instala las dependencias Python del proyecto.
+---
+
+## 5. 🔍 Diagnóstico del ambiente
+
+### `make preflight`
+
+Ejecuta una validación general del ambiente.
+
+```bash
+make preflight
+```
 
 Usar cuando:
 
-- Se acaba de clonar el repositorio.
-- Se creó un entorno virtual nuevo.
-- Faltan librerías como `ultralytics`, `opencv`, `pandas`, etc.
+- Se abre una nueva sesión de WSL.
+- Se clona el repositorio por primera vez.
+- Se sospecha que Hadoop, Hive o Python no están correctamente activos.
+- Se desea detectar errores antes de correr YOLO.
+
+Valida principalmente:
+
+```text
+Rutas del proyecto
+Python y librerías principales
+Hadoop / YARN
+HiveServer2
+Beeline
+```
+
+---
+
+## 6. 🧪 Demo liviana del proyecto
+
+### `make demo`
+
+Ejecuta una prueba controlada y ligera usando **2 imágenes y 2 videos** seleccionados desde `data/raw/`.
+
+```bash
+make demo
+```
+
+Este comando es ideal para probar rápidamente si todo el pipeline funciona sin procesar todo el dataset.
+
+Flujo ejecutado:
+
+```text
+check-paths
+start-hadoop
+start-hive
+hive-init
+clean-yolo-state
+demo-prepare
+detect-demo-images
+detect-demo-videos
+validate-csv
+load-hive
+hive-final-textfile
+validate-hive
+count-hdfs
+report-run
+```
+
+Resultado esperado:
+
+```text
+✅ Dataset demo preparado correctamente.
+✅ Detección YOLO finalizada correctamente.
+✅ Validación CSV finalizada correctamente.
+✅ Datos cargados en Hive.
+✅ Reporte generado en reports/.
+```
+
+### `make demo-prepare`
+
+Prepara el dataset demo copiando una muestra liviana:
+
+```bash
+make demo-prepare
+```
+
+Crea o actualiza:
+
+```text
+data/demo/images/
+data/demo/videos/
+```
+
+### `make detect-demo-images`
+
+Procesa solo las 2 imágenes de la demo:
+
+```bash
+make detect-demo-images
+```
+
+### `make detect-demo-videos`
+
+Procesa solo los 2 videos de la demo y usa `--append-csv` para no borrar las detecciones de imágenes:
+
+```bash
+make detect-demo-videos
+```
+
+---
+
+## 7. 📦 Instalación y validación Python
+
+### `make install-deps`
+
+Instala dependencias Python del proyecto:
 
 ```bash
 make install-deps
 ```
 
----
+Usar cuando:
+
+- Se acaba de crear el entorno virtual.
+- Se clonó el repositorio en otra máquina.
+- Faltan librerías como `ultralytics`, `opencv`, `pandas`, `torch`, etc.
+
+### `make install`
+
+Alias de `install-deps`:
+
+```bash
+make install
+```
 
 ### `make install-telegram-deps`
 
-Instala dependencias necesarias para Telegram, principalmente `requests`.
-
-Usar cuando se desea activar notificaciones por Telegram.
+Instala dependencias para Telegram:
 
 ```bash
 make install-telegram-deps
 ```
 
----
-
 ### `make test-python`
 
-Valida que las principales librerías Python funcionen correctamente.
+Valida que Python y las librerías principales funcionen:
 
 ```bash
 make test-python
 ```
-
-Valida:
-
-- `cv2`
-- `pandas`
-- `torch`
-- `ultralytics`
 
 Resultado esperado:
 
@@ -77,11 +234,23 @@ cuda: False
 ultralytics ok
 ```
 
+> Nota: `cuda: False` no es un error. Solo indica que el procesamiento se hará por CPU.
+
+### `make test`
+
+Alias de `test-python`:
+
+```bash
+make test
+```
+
 ---
+
+## 8. 📁 Validación de rutas
 
 ### `make check-paths`
 
-Valida que existan las rutas principales del proyecto.
+Valida que existan carpetas y archivos mínimos:
 
 ```bash
 make check-paths
@@ -97,15 +266,15 @@ data/raw/videos/
 models/yolov8n.pt
 ```
 
-Usar antes de ejecutar el flujo completo.
+Usar antes de cualquier ejecución si se movieron archivos o se descargó el proyecto desde GitHub.
 
 ---
 
-## 4. Comandos de Hadoop y YARN
+## 9. 🐘 Hadoop y HDFS
 
 ### `make start-hadoop`
 
-Levanta HDFS y YARN.
+Levanta HDFS y YARN:
 
 ```bash
 make start-hadoop
@@ -118,27 +287,13 @@ start-dfs.sh
 start-yarn.sh
 ```
 
-Usar cuando:
-
-- Se inicia WSL.
-- Se reinició la máquina.
-- Hadoop no está activo.
-
----
-
 ### `make status-hadoop`
 
-Muestra el estado de Hadoop/YARN.
+Valida el estado de Hadoop:
 
 ```bash
 make status-hadoop
 ```
-
-Valida:
-
-- Procesos Java con `jps -l`.
-- Nodos YARN con `yarn node -list`.
-- Directorios HDFS con `hdfs dfs -ls /`.
 
 Procesos esperados:
 
@@ -150,43 +305,31 @@ ResourceManager
 NodeManager
 ```
 
----
-
 ### `make stop-hadoop`
 
-Detiene HDFS y YARN.
+Detiene HDFS y YARN:
 
 ```bash
 make stop-hadoop
 ```
 
-Usar cuando se desea cerrar el ambiente Big Data.
-
 ---
 
-## 5. Comandos de Hive
+## 10. 🐝 Hive y Beeline
 
 ### `make start-hive`
 
-Levanta HiveServer2 en el puerto `10000`.
+Levanta HiveServer2 en el puerto `10000`:
 
 ```bash
 make start-hive
 ```
 
-Usar cuando:
-
-- HiveServer2 no está activo.
-- Se necesita conexión Beeline.
-- Se va a cargar o consultar información en Hive.
-
-El target está configurado para no reiniciar Hive si ya está activo.
-
----
+El target está diseñado para **no reiniciar HiveServer2 si ya está activo**.
 
 ### `make status-hive`
 
-Valida HiveServer2.
+Valida puertos y conexión Beeline:
 
 ```bash
 make status-hive
@@ -194,32 +337,31 @@ make status-hive
 
 Valida:
 
-- Puerto `10000`.
-- Puerto `10002`.
-- Conexión Beeline.
-- Ejecución de `SHOW DATABASES`.
+```text
+Puerto 10000
+Puerto 10002
+SHOW DATABASES con Beeline
+```
 
----
+### `make test-hive`
+
+Alias de `status-hive`:
+
+```bash
+make test-hive
+```
 
 ### `make stop-hive`
 
-Detiene HiveServer2 y Metastore si existieran procesos activos.
+Detiene HiveServer2/Metastore si existieran procesos activos:
 
 ```bash
 make stop-hive
 ```
 
-Usar cuando:
-
-- Hive quedó colgado.
-- Se requiere reiniciar Hive.
-- Se desea apagar servicios.
-
----
-
 ### `make hive-init`
 
-Crea la base y tablas iniciales de Hive.
+Crea la base y las tablas iniciales:
 
 ```bash
 make hive-init
@@ -231,15 +373,13 @@ Ejecuta:
 sql/01_create_yolo_objects_tables.sql
 ```
 
-Crea:
+### `make hive-create`
 
-```text
-yolo_project
-yolo_objects_csv_stage
-yolo_objects
+Alias de `hive-init`:
+
+```bash
+make hive-create
 ```
-
----
 
 ### `make hive-final-textfile`
 
@@ -255,32 +395,32 @@ make hive-final-textfile
 
 Usar cuando:
 
-- Se desea evitar problemas con `COUNT(*)` o MapReduce.
-- Se quiere que Hive lea directamente los CSV cargados en HDFS.
-- Se actualizó el dataset y se desea refrescar la tabla final.
+- Se actualizó el dataset.
+- Se quiere que Hive lea directamente los CSV en HDFS.
+- Se desea evitar problemas con consultas que dependan de MapReduce.
+
+### `make hive-merge`
+
+Alias de `hive-final-textfile`:
+
+```bash
+make hive-merge
+```
 
 ---
 
-## 6. Comandos de detección YOLO
+## 11. 🧠 Detección YOLO
 
 ### `make detect-images`
 
-Ejecuta detección sobre imágenes.
-
-```bash
-make detect-images
-```
-
-Lee imágenes desde:
+Procesa imágenes desde:
 
 ```text
 data/raw/images/
 ```
 
-Genera:
-
-```text
-data/staging/yolo_detections.csv
+```bash
+make detect-images
 ```
 
 Equivalente manual:
@@ -289,26 +429,16 @@ Equivalente manual:
 python src/sistema_clasificacion.py --mode images --model models/yolov8n.pt
 ```
 
----
-
 ### `make detect-videos`
 
-Ejecuta detección sobre videos.
-
-```bash
-make detect-videos
-```
-
-Lee videos desde:
+Procesa videos desde:
 
 ```text
 data/raw/videos/
 ```
 
-Genera o actualiza:
-
-```text
-data/staging/yolo_detections.csv
+```bash
+make detect-videos
 ```
 
 Equivalente manual:
@@ -317,47 +447,45 @@ Equivalente manual:
 python src/sistema_clasificacion.py --mode videos --model models/yolov8n.pt
 ```
 
----
-
 ### `make detect-camera`
 
-Ejecuta detección usando cámara.
+Procesa cámara en tiempo real:
 
 ```bash
 make detect-camera
 ```
 
-Usar si WSL reconoce la cámara en:
-
-```text
-/dev/video0
-```
-
-Validar cámara:
+Usar si WSL reconoce la cámara:
 
 ```bash
 ls /dev/video*
 ```
 
----
-
 ### `make detect-all`
 
-Ejecuta detección sobre imágenes y videos.
+Procesa imágenes y videos sin perder el CSV de imágenes:
 
 ```bash
 make detect-all
 ```
 
-Usar cuando se desea procesar ambos tipos de archivo sin cargar todavía a Hive.
+Este target debe procesar imágenes primero y luego videos usando modo append para conservar ambos resultados en `data/staging/yolo_detections.csv`.
+
+### `make classify-all`
+
+Alias de `detect-all`:
+
+```bash
+make classify-all
+```
 
 ---
 
-## 7. Comandos de limpieza y refresco
+## 12. 🧹 Limpieza y refresco de datos
 
 ### `make clean-yolo-state`
 
-Limpia el estado anterior del flujo YOLO/Hive.
+Limpia el estado del flujo YOLO/Hive:
 
 ```bash
 make clean-yolo-state
@@ -374,82 +502,76 @@ data/processed/annotated/videos/*
 /projects/yolo_objects/staging en HDFS
 ```
 
-Usar cuando:
+No borra los archivos originales de:
 
-- Se reemplazaron imágenes.
-- Se reemplazaron videos.
-- Se desea regenerar el CSV desde cero.
-- Se desea actualizar Hive con solo el dataset actual.
+```text
+data/raw/images/
+data/raw/videos/
+```
 
----
+### `make clean-all-runtime`
+
+Limpia el estado completo de ejecución, incluyendo reportes y logs runtime:
+
+```bash
+make clean-all-runtime
+```
+
+Usar cuando se quiere una ejecución completamente nueva sin tocar el dataset original.
 
 ### `make refresh-images`
 
-Flujo recomendado cuando solo se cambiaron imágenes.
+Flujo recomendado si solo se cambiaron imágenes:
 
 ```bash
 make refresh-images
 ```
 
-Ejecuta:
-
-```text
-check-paths
-start-hadoop
-start-hive
-hive-init
-clean-yolo-state
-detect-images
-load-hive
-hive-final-textfile
-validate-hive
-count-hdfs
-```
-
-Usar cuando:
-
-```text
-Solo se agregaron, borraron o reemplazaron imágenes en data/raw/images/
-```
-
----
+Ejecuta limpieza, detección de imágenes, validación CSV, carga a Hive, validación SQL y reporte.
 
 ### `make refresh-videos`
 
-Flujo recomendado cuando solo se cambiaron videos.
+Flujo recomendado si solo se cambiaron videos:
 
 ```bash
 make refresh-videos
 ```
 
-Ejecuta:
-
-```text
-check-paths
-start-hadoop
-start-hive
-hive-init
-clean-yolo-state
-detect-videos
-load-hive
-hive-final-textfile
-validate-hive
-count-hdfs
-```
-
-Usar cuando:
-
-```text
-Solo se agregaron, borraron o reemplazaron videos en data/raw/videos/
-```
+Ejecuta limpieza, detección de videos, validación CSV, carga a Hive, validación SQL y reporte.
 
 ---
 
-## 8. Comandos de carga y validación Hive
+## 13. 📄 CSV, carga a Hive y validaciones
+
+### `make validate-csv`
+
+Valida el CSV generado por YOLO:
+
+```bash
+make validate-csv
+```
+
+Revisa:
+
+```text
+Existencia del archivo
+Lectura correcta con pandas
+Columnas obligatorias
+Cantidad de registros
+Duplicados en detection_id
+Clases detectadas
+Fuentes procesadas
+```
+
+Archivo validado:
+
+```text
+data/staging/yolo_detections.csv
+```
 
 ### `make load-hive`
 
-Carga el CSV de detecciones a HDFS/Hive.
+Carga el CSV a HDFS/Hive:
 
 ```bash
 make load-hive
@@ -459,20 +581,26 @@ Este comando:
 
 1. Lee `data/staging/yolo_detections.csv`.
 2. Genera lotes en `data/processed/hive_batches/`.
-3. Sube lotes a HDFS.
-4. Carga datos en `yolo_objects_csv_stage`.
+3. Sube archivos a HDFS.
+4. Carga registros en `yolo_objects_csv_stage`.
 
----
+### `make etl-hive`
+
+Alias de `load-hive`:
+
+```bash
+make etl-hive
+```
 
 ### `make validate-hive`
 
-Consulta registros desde Hive.
+Consulta datos desde Hive:
 
 ```bash
 make validate-hive
 ```
 
-Ejecuta una consulta tipo:
+Consulta esperada:
 
 ```sql
 SELECT source_id, class_name, confidence
@@ -480,13 +608,17 @@ FROM yolo_objects
 LIMIT 20;
 ```
 
-Usar para confirmar que Hive puede leer las detecciones.
+### `make validate-hive-sample`
 
----
+Muestra una muestra completa de registros:
+
+```bash
+make validate-hive-sample
+```
 
 ### `make count-hdfs`
 
-Cuenta registros directamente desde HDFS.
+Cuenta registros directamente desde HDFS:
 
 ```bash
 make count-hdfs
@@ -498,75 +630,116 @@ Equivalente:
 hdfs dfs -cat /projects/yolo_objects/staging/* | wc -l
 ```
 
-Se usa porque `COUNT(*)` en Hive puede depender de MapReduce/YARN.
-
----
-
 ### `make list-hdfs`
 
-Lista archivos cargados en HDFS.
+Lista archivos cargados en HDFS:
 
 ```bash
 make list-hdfs
 ```
 
-Valida:
+---
+
+## 14. 📊 Reportes automáticos
+
+### `make report-run`
+
+Genera un reporte Markdown de la última ejecución:
+
+```bash
+make report-run
+```
+
+Salida esperada:
 
 ```text
-/projects/yolo_objects/staging
+reports/resumen_ejecucion_YYYYMMDD_HHMMSS.md
+reports/hive_sample_YYYYMMDD_HHMMSS.txt
 ```
+
+El reporte incluye:
+
+```text
+Fecha de ejecución
+Total de imágenes/videos disponibles
+Filas del CSV
+Clases detectadas
+Fuentes procesadas
+Conteo desde HDFS
+Muestra de Hive
+```
+
+Este comando es útil para dejar evidencia técnica de cada corrida.
 
 ---
 
-## 9. Comandos de Telegram
+## 15. 📲 Telegram
 
 ### `make telegram-test`
 
-Envía un mensaje de prueba a Telegram.
+Envía un mensaje de prueba:
 
 ```bash
 make telegram-test
 ```
 
-Antes se debe configurar:
+Configurar previamente:
 
 ```bash
 cp .env.telegram.example .env.telegram
 nano .env.telegram
 ```
 
-Con:
+Contenido esperado:
 
 ```text
 TELEGRAM_BOT_TOKEN=<TOKEN_TELEGRAM>
 TELEGRAM_CHAT_ID=<CHAT_ID>
 ```
 
----
+### `make telegram-start`
+
+Envía notificación de inicio:
+
+```bash
+make telegram-start
+```
+
+### `make telegram-ok`
+
+Envía notificación de éxito:
+
+```bash
+make telegram-ok
+```
+
+### `make telegram-error`
+
+Envía notificación de error:
+
+```bash
+make telegram-error
+```
 
 ### `make detect-images-notify`
 
-Ejecuta detección en imágenes y notifica inicio/fin/error por Telegram.
+Detecta imágenes y notifica por Telegram:
 
 ```bash
 make detect-images-notify
 ```
 
----
-
 ### `make detect-videos-notify`
 
-Ejecuta detección en videos y notifica inicio/fin/error por Telegram.
+Detecta videos y notifica por Telegram:
 
 ```bash
 make detect-videos-notify
 ```
 
----
-
 ### `make load-hive-notify`
 
-Carga datos a Hive y notifica inicio/fin/error por Telegram.
+Carga a Hive y notifica:
 
 ```bash
 make load-hive-notify
@@ -574,11 +747,11 @@ make load-hive-notify
 
 ---
 
-## 10. Flujos completos
+## 16. 🚀 Flujos completos
 
 ### `make run-review`
 
-Ejecuta todo el flujo completo sin Telegram.
+Ejecuta el flujo completo sin Telegram:
 
 ```bash
 make run-review
@@ -592,79 +765,153 @@ start-hadoop
 start-hive
 hive-init
 clean-yolo-state
-detect-images
-detect-videos
+detect-all
+validate-csv
 load-hive
 hive-final-textfile
 validate-hive
 count-hdfs
+report-run
 ```
 
-Usar para la revisión principal del profesor.
-
----
+Usar para la revisión principal del proyecto.
 
 ### `make run-review-notify`
 
-Ejecuta todo el flujo completo con notificaciones Telegram.
+Ejecuta el flujo completo con Telegram:
 
 ```bash
 make run-review-notify
 ```
 
-Usar cuando se desea recibir alertas de avance, finalización o error.
+Usar cuando se desea recibir notificaciones de inicio, finalización o error.
 
 ---
 
-## 11. Casos de uso recomendados
+## 17. 🌬️ Airflow y limpieza Python
 
-| Caso | Comando recomendado |
+### `make airflow-start`
+
+Inicia Airflow Webserver y Scheduler:
+
+```bash
+make airflow-start
+```
+
+URL esperada:
+
+```text
+http://localhost:8080
+```
+
+### `make airflow-stop`
+
+Detiene procesos Airflow:
+
+```bash
+make airflow-stop
+```
+
+### `make clean`
+
+Limpia archivos Python temporales:
+
+```bash
+make clean
+```
+
+Elimina:
+
+```text
+__pycache__/
+*.pyc
+```
+
+### `make clean-runtime`
+
+Limpia salidas procesadas locales:
+
+```bash
+make clean-runtime
+```
+
+---
+
+## 18. 🧭 Recomendaciones de uso
+
+| Escenario | Comando recomendado |
 |---|---|
-| Primera validación del entorno | `make test-python` |
-| Verificar estructura | `make check-paths` |
-| Levantar Hadoop | `make start-hadoop` |
-| Levantar Hive | `make start-hive` |
-| Crear tablas Hive | `make hive-init` |
-| Solo cambié imágenes | `make refresh-images` |
-| Solo cambié videos | `make refresh-videos` |
-| Cambié imágenes y videos | `make run-review` |
-| Quiero limpiar todo antes | `make clean-yolo-state` |
+| Quiero ver todos los comandos | `make help` |
+| Quiero diagnosticar ambiente | `make preflight` |
+| Quiero probar rápido con pocos archivos | `make demo` |
+| Quiero ejecutar el proyecto completo | `make run-review` |
+| Cambié solo imágenes | `make refresh-images` |
+| Cambié solo videos | `make refresh-videos` |
+| Quiero validar CSV | `make validate-csv` |
 | Quiero validar Hive | `make validate-hive` |
-| Quiero contar registros | `make count-hdfs` |
+| Quiero generar evidencia | `make report-run` |
 | Quiero usar Telegram | `make run-review-notify` |
+| Quiero limpiar ejecución | `make clean-yolo-state` |
+| Quiero apagar Hive | `make stop-hive` |
+| Quiero apagar Hadoop | `make stop-hadoop` |
 
 ---
 
-## 12. Flujo recomendado para el profesor
+## 19. 🧑‍🏫 Flujo recomendado para revisión
 
-### Sin Telegram
+### Revisión rápida
 
 ```bash
 cd ~/cursobsgetl/codigo/etl-ai-lab
 source ~/cursobsgetl/ambientes/etl-ai-lab/bin/activate
+make demo
+```
 
+### Revisión completa
+
+```bash
+cd ~/cursobsgetl/codigo/etl-ai-lab
+source ~/cursobsgetl/ambientes/etl-ai-lab/bin/activate
 make run-review
 ```
 
-### Con Telegram
+### Revisión con Telegram
 
 ```bash
 cd ~/cursobsgetl/codigo/etl-ai-lab
 source ~/cursobsgetl/ambientes/etl-ai-lab/bin/activate
-
 cp .env.telegram.example .env.telegram
 nano .env.telegram
-
 make telegram-test
 make run-review-notify
 ```
 
 ---
 
-## 13. Notas importantes
+## 20. ⚠️ Buenas prácticas
 
-- Si se reemplazan imágenes o videos, usar `make refresh-images`, `make refresh-videos` o `make run-review`.
-- El CSV `data/staging/yolo_detections.csv` debe regenerarse en cada ejecución limpia.
-- La tabla Hive `yolo_objects` debe reflejar los archivos actuales cargados en HDFS.
-- Las imágenes/videos originales no se suben a GitHub; se entregan como comprimido aparte.
-- El repositorio conserva la estructura mediante archivos `.gitkeep`.
+- Ejecutar `make preflight` antes de la revisión final.
+- Usar `make demo` para detectar errores rápidamente.
+- Usar `make run-review` para validar todo el pipeline.
+- No subir imágenes/videos originales al repositorio si son pesados.
+- Entregar multimedia como comprimido aparte.
+- No subir `.env.telegram` ni tokens reales a GitHub.
+- Conservar los reportes en `reports/` como evidencia técnica.
+- Usar `make clean-yolo-state` cuando se reemplacen imágenes o videos.
+
+---
+
+## 21. ✅ Resumen operativo
+
+```text
+Ambiente nuevo       → make install-deps
+Diagnóstico          → make preflight
+Demo rápida          → make demo
+Solo imágenes        → make refresh-images
+Solo videos          → make refresh-videos
+Flujo completo       → make run-review
+Con Telegram         → make run-review-notify
+Reporte evidencia    → make report-run
+```
+
+Este instructivo permite usar el Makefile como una consola operativa profesional para ejecutar, validar, depurar y documentar el flujo completo del proyecto._久久爱_FINAL답 needs provide updated file maybe. Use uploaded existing cite. Must create file. Could write to /mnt/data README_MAKEFILE_actualizado.md maybe already did in analysis, but not zip. Need maybe mention based on current file. We need produce link. Already generated file in analysis. Could make zip too. Need final concise with link. Need cite file. Since cite uploaded. Ensure file exists. Use container maybe zip. Also maybe mention copy commands. Need maybe include 
