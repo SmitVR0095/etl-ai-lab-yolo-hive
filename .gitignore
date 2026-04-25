@@ -115,3 +115,11 @@ docs/evidencias/*
 *.tar.gz
 *.bak
 *.bak*
+
+# ==========================
+# Demo runtime
+# ==========================
+data/demo/images/*
+data/demo/videos/*
+!data/demo/images/.gitkeep
+!data/demo/videos/.gitkeep

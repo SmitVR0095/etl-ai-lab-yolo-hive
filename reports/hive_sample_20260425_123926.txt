@@ -1,0 +1,39 @@
+Connecting to jdbc:hive2://localhost:10000/yolo_project
+Connected to: Apache Hive (version 4.1.0)
+Driver: Hive JDBC (version 2.3.9)
+Transaction isolation: TRANSACTION_REPEATABLE_READ
+INFO  : Compiling command(queryId=smit_vr_20260425123932_9ff5cf4b-071b-4b4b-9604-5b66038f15e8): SELECT source_id, class_name, confidence FROM yolo_objects LIMIT 20
+INFO  : No Stats for yolo_project@yolo_objects, Columns: confidence, source_id, class_name
+INFO  : Semantic Analysis Completed (retrial = false)
+INFO  : Created Hive schema: Schema(fieldSchemas:[FieldSchema(name:source_id, type:string, comment:null), FieldSchema(name:class_name, type:string, comment:null), FieldSchema(name:confidence, type:double, comment:null)], properties:null)
+INFO  : Completed compiling command(queryId=smit_vr_20260425123932_9ff5cf4b-071b-4b4b-9604-5b66038f15e8); Time taken: 0.203 seconds
+INFO  : Concurrency mode is disabled, not creating a lock manager
+INFO  : Executing command(queryId=smit_vr_20260425123932_9ff5cf4b-071b-4b4b-9604-5b66038f15e8): SELECT source_id, class_name, confidence FROM yolo_objects LIMIT 20
+INFO  : Completed executing command(queryId=smit_vr_20260425123932_9ff5cf4b-071b-4b4b-9604-5b66038f15e8); Time taken: 0.0 seconds
++------------------------------------+-------------+-------------+
+|             source_id              | class_name  | confidence  |
++------------------------------------+-------------+-------------+
+| pexels-alphatradezone-5831343.jpg  | mouse       | 0.882481    |
+| pexels-alphatradezone-5831343.jpg  | person      | 0.871137    |
+| pexels-alphatradezone-5831343.jpg  | keyboard    | 0.790445    |
+| pexels-alphatradezone-5831343.jpg  | tv          | 0.748332    |
+| pexels-alphatradezone-5831343.jpg  | person      | 0.718563    |
+| pexels-alphatradezone-5831343.jpg  | tv          | 0.647737    |
+| pexels-alphatradezone-5831343.jpg  | keyboard    | 0.494924    |
+| pexels-alphatradezone-5831343.jpg  | book        | 0.353919    |
+| pexels-alphatradezone-5831700.jpg  | person      | 0.925662    |
+| pexels-alphatradezone-5831700.jpg  | laptop      | 0.922741    |
+| pexels-alphatradezone-5831700.jpg  | person      | 0.873082    |
+| pexels-alphatradezone-5831700.jpg  | tv          | 0.602529    |
+| pexels-alphatradezone-5831700.jpg  | laptop      | 0.48235     |
+| pexels-alphatradezone-5831700.jpg  | book        | 0.416885    |
+| 10030-222013928.mp4                | person      | 0.781074    |
+| 10030-222013928.mp4                | person      | 0.778693    |
+| 10030-222013928.mp4                | person      | 0.754781    |
+| 10030-222013928.mp4                | person      | 0.704388    |
+| 10030-222013928.mp4                | person      | 0.552945    |
+| 10030-222013928.mp4                | person      | 0.48656     |
++------------------------------------+-------------+-------------+
+20 rows selected (0.407 seconds)
+Beeline version 2.3.9 by Apache Hive
+Closing: 0: jdbc:hive2://localhost:10000/yolo_project
