@@ -98,3 +98,9 @@ models/*.engine
 Thumbs.db
 .vscode/
 .idea/
+
+# ==========================
+# Evidencias seleccionadas para GitHub
+# ==========================
+!docs/evidencias/
+!docs/evidencias/**
