@@ -114,3 +114,4 @@ docs/evidencias/*
 *.tar
 *.tar.gz
 *.bak
+*.bak*
